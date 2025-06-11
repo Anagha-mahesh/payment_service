@@ -34,6 +34,8 @@ class PaymentWebhook(BaseModel):
     paymentId: UUID4
     status: PaymentStatus
     gatewayReference: str
+import os
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://localhost:8002")
 
 @app.post("/payments/initiate", response_model=InitiatePaymentResponse)
 def initiate_payment(req: InitiatePaymentRequest, db: Session = Depends(get_db)):
@@ -70,7 +72,7 @@ def payment_webhook(webhook: PaymentWebhook, db: Session = Depends(get_db)):
     # Notify Order Service
     try:
         response = requests.patch(
-            f"http://order-service:8083/orders/{payment.order_id}",
+            f"{ORDER_SERVICE_URL}/orders/{payment.order_id}",
             json={"status": "Confirmed"} if webhook.status == PaymentStatus.Success else {"status": "Cancelled"}
         )
         if response.status_code != 200:
